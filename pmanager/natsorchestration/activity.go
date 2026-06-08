@@ -180,6 +180,8 @@ func (e *NatsActivityExecutor) processMessage(ctx context.Context, message jetst
 		result = e.ActivityProcessor.ProcessDeploy(activityContext)
 	} else if activityContext.Discriminator() == api.DisposeDiscriminator {
 		result = e.ActivityProcessor.ProcessDispose(activityContext)
+	} else if activityContext.Discriminator() == api.JoinDiscriminator {
+		result = e.ActivityProcessor.ProcessDeploy(activityContext)
 	} else {
 		result = e.ActivityProcessor.Process(activityContext)
 	}

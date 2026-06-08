@@ -24,8 +24,9 @@ const (
 	DataPlaneType         VPAType = "cfm.dataplane"
 	ParticipantIdentifier         = "cfm.participant.id"
 
-	VPADeployType  OrchestrationType = "cfm.orchestration.vpa.deploy"
-	VPADisposeType OrchestrationType = "cfm.orchestration.vpa.dispose"
+	VPADeployType        OrchestrationType = "cfm.orchestration.vpa.deploy"
+	VPADisposeType       OrchestrationType = "cfm.orchestration.vpa.dispose"
+	VPAJoinDataspaceType OrchestrationType = "cfm.orchestration.vpa.join"
 
 	VPAData        = "cfm.vpa.data"
 	CredentialData = "cfm.vpa.credentials"

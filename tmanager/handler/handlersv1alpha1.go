@@ -390,3 +390,23 @@ func (h *TMHandler) deployDataspaceProfile(w http.ResponseWriter, req *http.Requ
 func (h *TMHandler) health(w http.ResponseWriter, _ *http.Request) {
 	h.ResponseOK(w, response{Message: "OK"})
 }
+
+func (h *TMHandler) joinDataspace(
+	w http.ResponseWriter,
+	req *http.Request,
+	tenantID string,
+	participantID string,
+	dataspaceProfileID string) {
+
+	if h.InvalidMethod(w, req, http.MethodPost) {
+		return
+	}
+
+	profile, err := h.participantService.JoinDataspace(req.Context(), tenantID, participantID, dataspaceProfileID)
+	if err != nil {
+		h.HandleError(w, err)
+		return
+	}
+
+	h.ResponseAccepted(w, v1alpha1.ToParticipantProfile(profile))
+}

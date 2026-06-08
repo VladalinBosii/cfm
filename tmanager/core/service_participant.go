@@ -344,3 +344,75 @@ func (h vpaCallbackHandler) handle(
 		return nil
 	})
 }
+
+func (p participantService) JoinDataspace(ctx context.Context, tenantID string, participantID string, dataspaceProfileID string) (*api.ParticipantProfile, error) {
+	return store.Trx[api.ParticipantProfile](p.trxContext).AndReturn(ctx, func(ctx context.Context) (*api.ParticipantProfile, error) {
+		profile, err := p.participantStore.FindByID(ctx, participantID)
+		if err != nil {
+			return nil, err
+		}
+		if profile.TenantID != tenantID {
+			return nil, types.ErrNotFound
+		}
+
+		dProfile, err := p.dataspaceStore.FindByID(ctx, dataspaceProfileID)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, id := range profile.DataspaceProfileIDs {
+			if id == dataspaceProfileID {
+				return nil, fmt.Errorf("participant %s already in dataspace profile %s", participantID, dataspaceProfileID)
+			}
+		}
+
+		specs := generateCredentialSpecs(profile.ParticipantRoles, []api.DataspaceProfile{*dProfile})
+		if len(specs) == 0 {
+			return nil, fmt.Errorf("no credential specs found for dataspace profile %s", dataspaceProfileID)
+		}
+
+		participantContextID, err := resolveParticipantContextID(profile)
+		if err != nil {
+			return nil, err
+		}
+
+		oManifest := model.OrchestrationManifest{
+			ID:                uuid.New().String(),
+			CorrelationID:     profile.ID,
+			OrchestrationType: model.VPAJoinDataspaceType,
+			Payload:           make(map[string]any),
+		}
+		oManifest.Payload[model.ParticipantIdentifier] = profile.Identifier
+		oManifest.Payload[model.CredentialData] = specs
+		oManifest.Payload["clientID.apiAccess"] = participantContextID
+
+		profile.DataspaceProfileIDs = append(profile.DataspaceProfileIDs, dataspaceProfileID)
+		err = p.participantStore.Update(ctx, profile)
+		if err != nil {
+			return nil, fmt.Errorf("error updating participant %s for dataspace join: %w", participantID, err)
+		}
+
+		err = p.provisionClient.Send(ctx, oManifest)
+		if err != nil {
+			return nil, fmt.Errorf("error sending join orchestration for participant %s: %w", participantID, err)
+		}
+
+		return profile, nil
+	})
+}
+
+func resolveParticipantContextID(profile *api.ParticipantProfile) (string, error) {
+	stateData, found := profile.Properties[model.VPAStateData]
+	if !found {
+		return "", fmt.Errorf("participant %s has no VPA state data — was initial deployment completed?", profile.ID)
+	}
+	stateMap, ok := stateData.(map[string]any)
+	if !ok {
+		return "", fmt.Errorf("invalid VPA state data type for participant %s", profile.ID)
+	}
+	contextID, ok := stateMap["participantContextId"].(string)
+	if !ok || contextID == "" {
+		return "", fmt.Errorf("no participantContextId in VPA state data for participant %s — was initial deployment completed?", profile.ID)
+	}
+	return contextID, nil
+}

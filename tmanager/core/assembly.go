@@ -91,6 +91,7 @@ func (a *TMCoreServiceAssembly) Init(context *system.InitContext) error {
 	}
 	registry.Register(model.VPADeployType, deploymentHandler.handleDeploy)
 	registry.Register(model.VPADisposeType, deploymentHandler.handleDispose)
+	registry.Register(model.VPAJoinDataspaceType, deploymentHandler.handleDeploy)
 
 	return nil
 }

@@ -117,6 +117,7 @@ const (
 
 	DeployDiscriminator  = Discriminator(model.VPADeployType)
 	DisposeDiscriminator = Discriminator(model.VPADisposeType)
+	JoinDiscriminator    = Discriminator(model.VPAJoinDataspaceType)
 )
 
 type ActivityResult struct {
